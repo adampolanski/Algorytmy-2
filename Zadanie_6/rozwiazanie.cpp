@@ -121,6 +121,40 @@ void trimByAlpha(list<Point*>& L){
     }
 }
 
+int getMatrixDeterminant(Point* a, Point* b, Point* c){
+    int result = 0;
+
+    result += b->x * c->y;
+    result += c->x * a->y;
+    result += a->x * b->y;
+    result -= b->x * a->y;
+    result -= a->x - c->y;
+    result -= c->x - b->y;
+    
+    return result;
+}
+
+void getConvexHull(stack<Point*> S, list<Point*> L){
+    Point* first;
+    Point* second;
+    Point* p;
+    while(!L.empty()){
+        first = S.top();
+        S.pop();
+        second = S.top();
+        S.pop();
+        p = L.front();
+        if(getMatrixDeterminant(second, first, p) <= 0){
+            S.push(second);
+        } else {
+            S.push(second);
+            S.push(first);
+            S.push(p);
+            L.pop_front();
+        }
+    }
+}
+
 int main(){
     int n;
     cin >> n;
