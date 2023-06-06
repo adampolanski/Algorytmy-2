@@ -1,83 +1,8 @@
-/*
-  Algorytm Grahama - otoczka wypukla
-  wybieramy skrajnie dolny-lewy punkt - najmniejszy y i wtedy pierwszy z lewej
-  sprawdzamy punkt posrodku dwoch punktow:
-  - jak po srodku to wywalamy go
-  - jak po lewej to wywalam
-  - jak po prawej to dodaje
-
-  jak okreslic z ktorej jest punkt?
-  iloczyn wektorowy - z tych 3 punktow - zapisujemy w macierzy
-  | 1  1  1  |
-  | x1 x2 x3 |
-  | y1 y2 y3 |
-  aby okreslic strone to obliczyc wyznacznik macierzy - (mnozenie na ukosy)
-  jezeli jest <0 to po lewej stronie, =0 to na linii - jak wiekszy to po prawej
-
-  liczyc arctan aby liczyc kat - amplituda - funkcja wbudowana chb
-
-  jak amplituda (alfa) jest rowna to wykluczamy punkty blizsze - liczymy odleglosc - sa wspoliniowe wiec nie trzeba pierwiastka
-
-  test moze byc co ma punkty w prawie jednej liniii tylko
-
-  1. posortowac - kat i odleglosc
-  2. usunac wspoliniowe - O(n)
-  3. posortowac pozostale
-
-  1 albo 3 wybrac - nie dwa na raz
-
-  ALGORYTM:
-  (L to lista - std np.)
-  1. L = {A,B,C,D,E,...} - szukamy punktu skrajnie dolnego i skrajnie lewego - min(y), min(x)
-    znalezlismy punkt O - zlozonosc O(n)
-  2. O, L = {A,B,C,D,E,...} - O usuwamy juz z tej listy bo niepotrzebny
-    liczymy alfe i odleglosc d
-    dla kazdego punktu robimy funkcje liczaca odleglosc od O do tego punktu
-    atan2 do liczenia alfy
-    (x1 - x2)^2 + (y1 - y2)^2 do liczenia odleglosci - bez pierwiastka
-    zlozonosc O(n)
-  3. sortujemy punkty - comparator najpierw po alfa potem po d
-    zlozonosc O(nlogn) - MOZNA SORTA Z STL
-  4. usuwamy elementy o tym samym alfa
-    zlozonosc O(n)
-  5. inicjalizacja struktur danych - stos - na stos trafia O i pierwsze 2 z listy ~
-    S = {O,B,C}, L = {E,F,...}
-  6.  def(B,C,O) - dwa ostatnie punkty ze stosu i pierwszy element z listy
-    jezeli jej wartosc jest <= 0 to ze stosu sciagam element ostatni (C) [S.pop()] i
-    teraz robie dla kolejnych def(O,B,E) > 0 to na stos wrzucam E i usuwam go z listy - [S.push(E), L.pop_front()]
-    ^ wywolujemy w petli dla calej listy - for elem in L:...
-    zlozonosc O(n)
-  7. L = {} - na stosie sa wszystkie elementy tworzace otoczke wypukla S = {O,B,E,...}
-  8. Obliczyc obwod figury:
-    |OB| + |BE| + |EF| + ... = wynik algorytmu
-    zlozonosc O(n)
-  CZYLI ZLOZONOSC O(nlogn) ale duzo O(n) wiec trzeba optymalnie wszystko
-
-  PRZYKLAD:
-  wejscie jak w przykladzie na tichy - punkty A,B,C,D,E,F,G,H,I
-  1. najnizszy po lewej stronie to punkt A(1,1), wiec L = {B,C,D,E,F,G,H,I}
-  2. wyznaczam
-  3. sortuje liste -> O(1,1), L = {D,G,H,E,I,F,B,C}
-  4. iteruje po kolei i usuwam punkty o tych samych katach - zostawiam drugi ~ usuwam w srodku trojki
-  5. O(1,1), L = {G,H,I,F,C}
-  stos S = {O,G,H}, lista L = {I,F,C}
-  6. iteruje po elementach listy
-    sprawdzam wartosc wyznacznika macierzy - dwa ostatnie ze stosu i pierwszy z listy - czy  >= 0 -> usuwam ze stosu ostatni element: S = {O,G}
-    iteruje dalej S = {O,G,I}, L = {F,C} >= 0 nie -> dodaje na stos i usuwam z listy
-    ??? - iteruje po kolei az sie lista skonczy
-    {OGIF}
-    {OIFC}
-    {OGIC}
-  7. stos na koniec S = {O,G,I,C}
-  8. iteruje w petli po stosie i licze dlugosci odcinkow |OG| + |GI| + |IC| + |CO| = 2 + 2 + 2 + 2 = 8.00
-*/
-
-#include <iostream>
+#include <stdio.h>
 #include <list>
 #include <stack>
 #include <math.h>
 
-using std::cout, std::cin;
 using std::list, std::stack;
 using std::pow, std::atan2;
 
@@ -90,10 +15,6 @@ struct Point{
         this->y = y;
         this->dist = 0;
         this->alpha = 0;
-    }
-
-    void display(){
-        printf("x: %d\ny: %d\ndist: %0.2f\nalpha: %0.2f\n\n", this->x, this->y, this->dist, this->alpha);
     }
 
     void setDistanceSquared(Point* a){
@@ -109,6 +30,10 @@ struct Point{
             return a->alpha < b->alpha;
         else
             return a->dist < b->dist;
+    }
+
+    static float getDistance(Point* a, Point* b){
+        return sqrt((float)(pow((a->x - b->x), 2) + pow((a->y - b->y), 2)));
     }
 };
 
@@ -128,42 +53,59 @@ int getMatrixDeterminant(Point* a, Point* b, Point* c){
     result += c->x * a->y;
     result += a->x * b->y;
     result -= b->x * a->y;
-    result -= a->x - c->y;
-    result -= c->x - b->y;
+    result -= a->x * c->y;
+    result -= c->x * b->y;
     
     return result;
 }
 
-void getConvexHull(stack<Point*> S, list<Point*> L){
+void getConvexHull(stack<Point*>& S, list<Point*>& L){
     Point* first;
     Point* second;
     Point* p;
     while(!L.empty()){
-        first = S.top();
-        S.pop();
         second = S.top();
         S.pop();
+        first = S.top();
         p = L.front();
-        if(getMatrixDeterminant(second, first, p) <= 0){
-            S.push(second);
+        if(getMatrixDeterminant(first, second, p) <= 0){
+            delete second;
         } else {
             S.push(second);
-            S.push(first);
             S.push(p);
             L.pop_front();
         }
     }
 }
 
+float getCirc(stack<Point*>& S){
+    float result = 0.0f;
+    Point* start = S.top();
+    Point* first = S.top();
+    S.pop();
+    Point* second;
+    while(!S.empty()){
+        second = S.top();
+        S.pop();
+        result += Point::getDistance(first, second);
+        if(first != start) delete first;
+        first = second;
+    }
+    result += Point::getDistance(second, start);
+    delete start;
+    return result;
+} 
+
 int main(){
+
     int n;
-    cin >> n;
+    scanf("%d", &n);
 
     list<Point*> L;
     Point* start = NULL;
     int x, y;
     for(int i = 0; i < n; i++){
-        cin >> x >> y;
+        scanf("%d %d", &x, &y);
 
         if(start == NULL){
             start = new Point(x, y);
@@ -191,14 +133,9 @@ int main(){
     S.push(L.front());
     L.pop_front();
 
+    getConvexHull(S, L);
 
-
-    start->display();
-
-    for(Point* p: L){
-        p->display();
-        delete p;
-    }
+    printf("%.02f", getCirc(S));
 
     return 0;
 }
