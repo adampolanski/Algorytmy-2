@@ -1,19 +1,21 @@
 #include <iostream>
+#include <math.h>
 
 using std::cin, std::cout;
 
 double butelka(double cm) {
-	return 10 - (cm-2) * (cm-2);
+    return 10 - (cm-2) * (cm-2);
 }
 
-double getV(double f, int n = 20){
-    double h = f / n;
+double getV(double a, double b, int n = 1000){
     double result = 0;
-    for(int i = 1; i < n; i++){
-        result += ((butelka(h * (i - 1)) + butelka(h * i)) / 2) * h;
+    double h = (b - a) / n;
+
+    for(int i = 0; i < n; i++){
+        double x = i * h;
+        result += pow(butelka(x), 2) * h;
     }
-    cout << result << "\n";
-    return result;
+    return M_PI * result;
 }
 
 int main(){
@@ -23,19 +25,18 @@ int main(){
     double target = maxV - x*y*z*p;
 
     int n;
-    double f, height = 0;
+    double f;
     cin >> n;
-    double currentV = 0;
+
     for(int i = 0; i < n; i++){
         cin >> f;
-        height += f;
-        currentV = getV(height);
-        if(currentV > target){
+        target -= getV(0, f);
+        if(target < 0){
             cout << i+1;
             break;
         }
     } 
-    if(currentV <= target){
+    if(target >= 0){
         cout << "NIE";
     }  
     return 0;
